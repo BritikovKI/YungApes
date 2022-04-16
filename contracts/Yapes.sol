@@ -21,6 +21,26 @@ contract Yapes is IERC20, Ownable {
      * another and fee `amount` is taken.
      */
     event Fee( uint256 amount);
+    /**
+     * @dev Emitted when `account` is whitelisted.
+     */
+    event Whitelisted( address account);
+    /**
+     * @dev Emitted when `account` is unwhitelisted.
+     */
+    event Unwhitelisted( address account);
+    /**
+     * @dev Emitted when `account` is added as minter.
+     */
+    event AddMinter( address amount);
+    /**
+     * @dev Emitted when `account` is removed as minter.
+     */
+    event RemoveMinter( address amount);
+    /**
+     * @dev Emitted when `account` is a new benefactor.
+     */
+    event NewBenefactor( address amount);
 
     modifier onlyMinter() {
         require(minters[msg.sender] || owner() == msg.sender);
@@ -33,8 +53,9 @@ contract Yapes is IERC20, Ownable {
         benefactor = _benefactor;
     }
 
-    function changeBenefactor(address _benefactor) public {
+    function changeBenefactor(address _benefactor) external onlyOwner {
         benefactor = _benefactor;
+        emit NewBenefactor(_benefactor);
     }
 
     /**
@@ -42,8 +63,9 @@ contract Yapes is IERC20, Ownable {
      *
      * @param account - address to add
      */
-    function whitelist(address account) public onlyOwner {
+    function whitelist(address account) external onlyOwner {
         noTaxWhitelist[account] = true;
+        emit Whitelisted(account);
     }
 
 
@@ -52,8 +74,9 @@ contract Yapes is IERC20, Ownable {
      *
      * @param account - address to remove
      */
-    function removeFromWhitelist(address account) public onlyOwner {
+    function removeFromWhitelist(address account) external onlyOwner {
         noTaxWhitelist[account] = false;
+        emit Unwhitelisted(account);
     }
 
 
@@ -63,8 +86,9 @@ contract Yapes is IERC20, Ownable {
      *
      * @param account - address to add
      */
-    function addMinter(address account) public onlyOwner {
+    function addMinter(address account) external onlyOwner {
         minters[account] = true;
+        emit AddMinter(account);
     }
 
 
@@ -73,24 +97,27 @@ contract Yapes is IERC20, Ownable {
      *
      * @param account - address to remove
      */
-    function removeMinter(address account) public onlyOwner {
+    function removeMinter(address account) external onlyOwner {
         minters[account] = false;
+        emit RemoveMinter(account);
     }
 
     /**
-     * @dev See {IERC20-transfer}.
+     * @dev See {IERC20-transfer}. 15% fee is taken for the transfer,
+     * only exception are whitelisted addresses.
      *
      * @param to - recipient of transfer
      * @param amount - amount to transfer
      */
-    function transfer(address to, uint256 amount) public override returns (bool) {
+    function transfer(address to, uint256 amount) external override returns (bool) {
         address owner = _msgSender();
         _transfer(owner, to, amount);
         return true;
     }
 
     /**
-     * @dev See {IERC20-transferFrom}.
+     * @dev See {IERC20-transferFrom}. 15% fee is taken for the transfer,
+     * only exception are whitelisted addresses.
      *
      * @param from - sender of transfer
      * @param to - recipient of transfer
@@ -100,7 +127,7 @@ contract Yapes is IERC20, Ownable {
         address from,
         address to,
         uint256 amount
-    ) public override returns (bool) {
+    ) external override returns (bool) {
         address spender = _msgSender();
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
@@ -113,7 +140,7 @@ contract Yapes is IERC20, Ownable {
      * @param spender - address which will be spending tokens
      * @param addedValue - increase in value which will be allowed to spend
      */
-    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+    function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
         address owner = _msgSender();
         _approve(owner, spender, _allowances[owner][spender] + addedValue);
         return true;
@@ -125,7 +152,7 @@ contract Yapes is IERC20, Ownable {
      * @param spender - address which will be spending tokens
      * @param subtractedValue - decrease of value which will be allowed to spend
      */
-    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+    function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
         address owner = _msgSender();
         uint256 currentAllowance = _allowances[owner][spender];
         require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
@@ -142,7 +169,7 @@ contract Yapes is IERC20, Ownable {
      * @param account - recipient of mint
      * @param amount - amount to transfer
      */
-    function mint(address account, uint256 amount) public onlyMinter {
+    function mint(address account, uint256 amount) external onlyMinter {
         _mint(account, amount);
     }
 
@@ -152,7 +179,7 @@ contract Yapes is IERC20, Ownable {
      * @param account - recipient of burn
      * @param amount - amount to transfer
      */
-    function burn(address account, uint256 amount) public onlyMinter {
+    function burn(address account, uint256 amount) external onlyMinter {
         _burn(account, amount);
     }
 
@@ -162,7 +189,7 @@ contract Yapes is IERC20, Ownable {
      * @param spender - address that will be allowed to spend tokens
      * @param amount - amount of allowed tokens to spend
      */
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    function approve(address spender, uint256 amount) external override returns (bool) {
         address owner = _msgSender();
         _approve(owner, spender, amount);
         return true;
@@ -246,7 +273,7 @@ contract Yapes is IERC20, Ownable {
         address owner,
         address spender,
         uint256 amount
-    ) internal virtual {
+    ) internal {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -265,8 +292,8 @@ contract Yapes is IERC20, Ownable {
         address owner,
         address spender,
         uint256 amount
-    ) internal virtual {
-        uint256 currentAllowance = allowance(owner, spender);
+    ) internal {
+        uint256 currentAllowance = _allowances[owner][spender];
         if (currentAllowance != type(uint256).max) {
             require(currentAllowance >= amount, "ERC20: insufficient allowance");
         unchecked {
@@ -278,7 +305,7 @@ contract Yapes is IERC20, Ownable {
     /**
  * @dev Returns the name of the token.
      */
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
@@ -286,7 +313,7 @@ contract Yapes is IERC20, Ownable {
      * @dev Returns the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
@@ -295,28 +322,28 @@ contract Yapes is IERC20, Ownable {
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
      * be displayed to a user as `5.05` (`505 / 10 ** 2`).
      */
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return 18;
     }
 
     /**
      * @dev See {IERC20-totalSupply}.
      */
-    function totalSupply() public view override returns (uint256) {
+    function totalSupply() external view override returns (uint256) {
         return _totalSupply;
     }
 
     /**
      * @dev See {IERC20-balanceOf}.
      */
-    function balanceOf(address account) public view override returns (uint256) {
+    function balanceOf(address account) external view override returns (uint256) {
         return _balances[account];
     }
 
     /**
      * @dev See {IERC20-allowance}.
      */
-    function allowance(address owner, address spender) public view override returns (uint256) {
+    function allowance(address owner, address spender) external view override returns (uint256) {
         return _allowances[owner][spender];
     }
 
