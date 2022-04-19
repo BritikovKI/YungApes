@@ -110,7 +110,7 @@ contract Yapes is IERC20, Ownable {
      * @param amount - amount to transfer
      */
     function transfer(address to, uint256 amount) external override returns (bool) {
-        address owner = _msgSender();
+        address owner = msg.sender;
         _transfer(owner, to, amount);
         return true;
     }
@@ -128,7 +128,7 @@ contract Yapes is IERC20, Ownable {
         address to,
         uint256 amount
     ) external override returns (bool) {
-        address spender = _msgSender();
+        address spender = msg.sender;
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
         return true;
@@ -141,7 +141,7 @@ contract Yapes is IERC20, Ownable {
      * @param addedValue - increase in value which will be allowed to spend
      */
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
-        address owner = _msgSender();
+        address owner = msg.sender;
         _approve(owner, spender, _allowances[owner][spender] + addedValue);
         return true;
     }
@@ -153,7 +153,7 @@ contract Yapes is IERC20, Ownable {
      * @param subtractedValue - decrease of value which will be allowed to spend
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
-        address owner = _msgSender();
+        address owner = msg.sender;
         uint256 currentAllowance = _allowances[owner][spender];
         require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
     unchecked {
@@ -190,7 +190,7 @@ contract Yapes is IERC20, Ownable {
      * @param amount - amount of allowed tokens to spend
      */
     function approve(address spender, uint256 amount) external override returns (bool) {
-        address owner = _msgSender();
+        address owner = msg.sender;
         _approve(owner, spender, amount);
         return true;
     }
