@@ -256,6 +256,7 @@ contract Yapes is IERC20, Ownable {
     }
         _balances[to] += amount;
         _balances[benefactor] += tax/3;
+        totalSupply -= tax - tax/3;
 
         emit Transfer(from, to, amount);
         emit Fee(fee);
